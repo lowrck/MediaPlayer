@@ -1,36 +1,25 @@
-package sample;
-
-import javafx.animation.Animation;
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Group;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBase;
-import javafx.scene.control.Label;
-import javafx.scene.control.ToggleButton;
+
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import javafx.util.Duration;
-import java.util.Observable;
 
-import static java.lang.StrictMath.floor;
+import javax.crypto.NullCipher;
+import javax.swing.*;
+
 
 public class Main extends Application {
 
@@ -46,27 +35,23 @@ public class Main extends Application {
         Text fileName = new Text();
 
 
-        Image PlayButtonImage = new Image(getClass().getResourceAsStream("play.jpg"), 100, 100, false, false);
-        Image PauseButtonImage = new Image(getClass().getResourceAsStream("pause.jpg"), 100, 100, false, false);
-        Image FilePickerButtonImage = new Image(getClass().getResourceAsStream("mp3.jpg"), 30, 30, false, false);
+        Image PlayButtonImage = new Image(getClass().getResourceAsStream("/sample/play.jpg"), 200, 200, false, false);
+        Image PauseButtonImage = new Image(getClass().getResourceAsStream("/sample/pause.jpg"), 200, 200, false, false);
+        Image FilePickerButtonImage = new Image(getClass().getResourceAsStream("/sample/mp3.jpg"), 30, 30, false, false);
         ImageView imageViewPlay = new ImageView(PlayButtonImage);
         ImageView imageViewPause = new ImageView(PauseButtonImage);
         ImageView imageViewFile = new ImageView(FilePickerButtonImage);
 
 
-
-        time.setX((width / 4) * 3);
-       time.setY(height / 8);
+        final int[] picked = {0};
 
 
 
-        FileChooser fc = new FileChooser();
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("mp3 music","*.mp3"));
-        File file = fc.showOpenDialog(null);
-        String path = file.getAbsolutePath();
-        path = path.replace("\\", "/");
-        Media media = new Media(new File(path).toURI().toString());
-        final MediaPlayer[] mediaPlayer = {new MediaPlayer(media)};
+
+
+
+
+        final MediaPlayer[] mediaPlayer = {null};
        MediaView mediaView = new MediaView(mediaPlayer[0]);
 
         Button FilePicker = new Button();
@@ -74,20 +59,28 @@ public class Main extends Application {
         FilePicker.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                FileChooser fc = new FileChooser();
-                fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("mp3 music","*.mp3"));
-                File file = fc.showOpenDialog(null);
-                String path = file.getAbsolutePath();
-                path = path.replace("\\", "/");
-                Media mediaPick = new Media(new File(path).toURI().toString());
-                if(mediaPlayer[0].getStatus() == MediaPlayer.Status.PLAYING){
-                    mediaPlayer[0].stop();
+                try {
+                    FileChooser fc = new FileChooser();
+                    fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("mp3 music", "*.mp3"));
+                    File file = fc.showOpenDialog(null);
+                    String path = file.getAbsolutePath();
+                    path = path.replace("\\", "/");
+                    fileName.setText(file.getName().split("\\.mp3")[0]);
+                    Media mediaPick = new Media(new File(path).toURI().toString());
+                   try {
+                    if (mediaPlayer[0].getStatus() == MediaPlayer.Status.PLAYING) {
+                        mediaPlayer[0].stop();
+                    }}catch (NullPointerException nll) {}
+                    mediaPlayer[0] = new MediaPlayer(mediaPick);
+                    mediaPlayer[0].setAutoPlay(true);
+                    mediaPlayer[0].currentTimeProperty().addListener((javafx.beans.Observable ov) -> {
+                        time.setText(timeConverter(mediaPlayer[0].getCurrentTime().toMillis()) + " / " + timeConverter(mediaPlayer[0].getTotalDuration().toMillis()));
+                    });
+                }catch(NullPointerException nll) {
+                    JOptionPane.showMessageDialog(null, "Please pick a song", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                 }
-                mediaPlayer[0] = new MediaPlayer(mediaPick);
-                mediaPlayer[0].setAutoPlay(true);
-                mediaPlayer[0].currentTimeProperty().addListener((javafx.beans.Observable ov) -> {
-                    time.setText(timeConverter(mediaPlayer[0].getCurrentTime().toMillis())+ " / " + timeConverter(mediaPlayer[0].getTotalDuration().toMillis()));
-                });
+                picked[0] = 1;
             }
 
 
@@ -103,28 +96,38 @@ public class Main extends Application {
 
 
             @Override public void handle(ActionEvent e) {
-                if(picked != 1) {}
-                MediaPlayer.Status status = mediaPlayer[0].getStatus();
-                if (status == MediaPlayer.Status.PAUSED
-                        || status == MediaPlayer.Status.READY
-                        || status == MediaPlayer.Status.STOPPED) {
-                    mediaPlayer[0].play();
-                    System.out.println("Play");
-
-                    playpause.setGraphic(imageViewPlay);
+                if (picked[0] == 0) {
+                    JOptionPane.showMessageDialog(null, "Please pick a song", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                 }
-                else{
-                    mediaPlayer[0].pause();
-                    playpause.setGraphic(imageViewPause);
+
+                try {
+                    MediaPlayer.Status status = mediaPlayer[0].getStatus();
+                    if (status == MediaPlayer.Status.PAUSED
+                            || status == MediaPlayer.Status.READY
+                            || status == MediaPlayer.Status.STOPPED) {
+                        mediaPlayer[0].play();
+
+                        playpause.setGraphic(imageViewPlay);
+                    } else {
+                        mediaPlayer[0].pause();
+                        playpause.setGraphic(imageViewPause);
+                    }
+                }catch(NullPointerException nll) {
+
                 }
             }
         }
         ));
         time.setFont(Font.font("Times New Roman", 22));
-        mediaPlayer[0].currentTimeProperty().addListener((javafx.beans.Observable ov) -> {
-            time.setText(timeConverter(mediaPlayer[0].getCurrentTime().toMillis())+ " / " + timeConverter(mediaPlayer[0].getTotalDuration().toMillis()));
-        });
 
+
+        time.setX((width / 4) * 3);
+        time.setY(height / 8);
+        time.setText("0:00 / 0:00");
+        FilePicker.setLayoutY((height / 16) * 14);
+        fileName.setX((width / 2) - 100);
+        fileName.setY((height / 16) * 2);
 
 
         Group Player = new Group();
@@ -132,9 +135,11 @@ public class Main extends Application {
         Player.getChildren().add(mediaView);
         Player.getChildren().add(time);
         Player.getChildren().add(FilePicker);
+        Player.getChildren().add(fileName);
 
-        primaryStage.setTitle("Hello World");
-        primaryStage.setScene(new Scene(Player, width, height));
+        primaryStage.setTitle("Music Player");
+        Scene Stage = new Scene(Player, width, height);
+        primaryStage.setScene(Stage);
         primaryStage.show();
     }
 
